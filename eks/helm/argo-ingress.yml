@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/success-codes: "404"
+    alb.ingress.kubernetes.io/healthcheck-path: /login
+    #    alb.ingress.kubernetes.io/group.name: argocd
+    # alb.ingress.kubernetes.io/group.order: "1" # 우선순위 조정
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:420615923610:certificate/3dc92f2a-c7ef-4cf8-8f5b-289e4b3f613d
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 443

@@ -235,3 +235,89 @@ resource "aws_security_group_rule" "eks-vpc-all-egress" {
   
 }
 
+
+# RDS 보안그룹
+resource "aws_security_group" "eks-vpc-db-sg" {
+    vpc_id = aws_vpc.this.id
+    name = "eks-vpc-db-sg"
+    tags = {
+        Name = "eks-vpc-db-sg"
+    }
+}
+
+resource "aws_security_group_rule" "eks-vpc-db-egress" {
+    type = "egress"
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [ "0.0.0.0/0"]
+    security_group_id = aws_security_group.eks-vpc-db-sg.id
+    lifecycle {
+      create_before_destroy = true
+    }
+  
+}
+
+resource "aws_security_group_rule" "eks-vpc-db-ingress" {
+    type = "ingress"
+    from_port = 3306
+    to_port = 3306
+    protocol = "TCP"
+    cidr_blocks = [ "0.0.0.0/0"]
+    security_group_id = aws_security_group.eks-vpc-db-sg.id
+    lifecycle {
+      create_before_destroy = true
+    }
+  
+}
+
+resource "aws_db_subnet_group" "this" {
+  name = "min-subgroup"
+  subnet_ids = [ aws_subnet.pri_sub1.id, aws_subnet.pri_sub2.id ]
+
+  tags = {
+    "Name" = "min-pub-subgroup"
+  }
+
+}
+resource "aws_db_subnet_group" "that" {
+  name = "min-pub-subgroup"
+  subnet_ids = [ aws_subnet.pub_sub1.id, aws_subnet.pub_sub2.id ]
+
+  tags = {
+    "Name" = "min-pub-subgroup"
+  }
+
+}
+
+# RDS for postgre DB 생성
+resource "aws_db_instance" "this" {
+  # 오토스케일링 설정
+  allocated_storage = 20
+  max_allocated_storage = 50
+  skip_final_snapshot = true
+  # 자동 백업 주기 설정
+  # backup_retention_period = 7
+  db_subnet_group_name = aws_db_subnet_group.that.name
+  vpc_security_group_ids = [aws_security_group.eks-vpc-db-sg.id]
+  engine = "mysql"
+  engine_version = "5.7.44"
+  instance_class = "db.t3.micro"
+  storage_type   = "gp2"
+  identifier = "database-1"
+  # 유저 ID, Password 지정
+  username = "root"
+  password = "test1234"
+  # 허용 포트 설정
+  port = "3306"
+  db_name = "db"
+  # 다중AZ 설정
+  multi_az = true
+  # CloudWatch 로그 전송
+  # enabled_cloudwatch_logs_exports = ["mysql", "upgrade"]
+  parameter_group_name = "mysql57"
+  publicly_accessible = true
+  tags = {
+    "Name" = "database-1"
+  }
+}
