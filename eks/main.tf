@@ -238,10 +238,9 @@ resource "helm_release" "secrets-provider-aws" {
 
 # # # ingress 배포 #
 
+
 resource "kubernetes_ingress_v1" "alb" {
-  depends_on = [
-    resource.helm_release.lbc
-  ]
+
   metadata {
     name = "fast-ingress"
     namespace = "default"
@@ -252,7 +251,7 @@ resource "kubernetes_ingress_v1" "alb" {
       "alb.ingress.kubernetes.io/scheme" = "internet-facing"
       "alb.ingress.kubernetes.io/target-type" = "ip"
       "alb.ingress.kubernetes.io/group.name" = "min-alb-group"
-      "alb.ingress.kubernetes.io/healthcheck-path" = "/health"
+      "alb.ingress.kubernetes.io/healthcheck-path" = "/api/health"
     }
   }
   spec {
@@ -278,7 +277,40 @@ resource "kubernetes_ingress_v1" "alb" {
   
 }
 
-# resource "kubernetes_manifest" "aws_secrets_store" {
+# resource "kubernetes_service_v1" "svc-fast" {
+#   metadata {
+#     name = "svc-fast"
+#     namespace = "default"
+#   }
+#   spec {
+#     selector = {
+#       app = "fast"
+#     }
+#     session_affinity = "ClientIP"
+#     # 동일한 아이피를 갖는 클라이언트는 동일한 pod에 연결시켜줌
+#     port {
+#       port        = 80
+#       target_port = 8000
+#     }
+
+#     # type = "NodePort"
+#   }
+# }
+
+# # apiVersion: secrets-store.csi.x-k8s.io/v1
+# # kind: SecretProviderClass
+# # metadata:
+# #   name: aws-secrets
+# # spec:
+# #   provider: aws
+# #   parameters:
+# #     objects: |
+# #         - objectName: "arn:aws:secretsmanager:ap-northeast-2:865577889736:secret:dev/rds-rftU0T"
+# # 시크릿매니저의 시크릿을 가져다 쓸 수 있게 해줌.
+
+# resource "kubernetes_manifest" "aws_secrets_provider_class" {
+#   depends_on = [ helm_release.lbc ]
+  
 #   manifest = {
 #     apiVersion = "secrets-store.csi.x-k8s.io/v1"
 #     kind       = "SecretProviderClass"
@@ -287,91 +319,91 @@ resource "kubernetes_ingress_v1" "alb" {
 #       namespace = "default"
 #     }
 #     spec = {
-#       provider   = "aws"
+#       provider = "aws"
 #       parameters = {
-#         objects = <<EOT
+#         objects = <<-EOT
 #         - objectName: "arn:aws:secretsmanager:ap-northeast-2:865577889736:secret:dev/rds-rftU0T"
 #         EOT
 #       }
 #     }
 #   }
-#   # depends_on = [ 
-#   #   resource.kubernetes_ingress_v1.alb
-#   #  ]
 # }
 
-# resource "kubernetes_manifest" "svc_fast" {
-#   manifest = {
-#     apiVersion = "v1"
-#     kind       = "Service"
-#     metadata = {
-#       name = "svc-fast"
-#       namespace = "default"
-#     }
-#     spec = {
-#       selector = {
-#         app = "fast"
-#       }
-#       ports = [{
-#         port       = 80
-#         targetPort = 8000
-#       }]
-#     }
+# resource "kubernetes_deployment_v1" "fast-dep" {
+#   metadata {
+#     name = "fast-dep"
+#     namespace = "default"
 #   }
 
-#   # depends_on = [ 
-#   #   resource.kubernetes_ingress_v1.alb
-#   # ]
-# }
+#   spec {
+#     replicas = 1
 
-# resource "kubernetes_manifest" "fast_dep" {
-#   manifest = {
-#     apiVersion = "apps/v1"
-#     kind       = "Deployment"
-#     metadata = {
-#       name = "fast-dep"
-#       namespace = "default"
+#     selector {
+#       match_labels = {
+#         app = "fast"
+#       }
 #     }
-#     spec = {
-#       replicas = 1
-#       selector = {
-#         matchLabels = {
+
+#     template {
+#       metadata {
+#         name = "fast-pod"
+#         labels = {
 #           app = "fast"
 #         }
 #       }
-#       template = {
-#         metadata = {
-#           name = "fast-pod"
-#           labels = {
-#             app = "fast"
+      
+#       spec {
+#         service_account_name = "secret-sa"
+#         container {
+#           image = "865577889736.dkr.ecr.ap-northeast-2.amazonaws.com/fast:21"
+#           name  = "fast-con"
+#           volume_mount {
+#             name       = "secrets-store-inline"
+#             mount_path = "/mnt/secrets-store"
+#             read_only  = true
 #           }
 #         }
-#         spec = {
-#           serviceAccountName = "secret-sa"
-#           containers = [{
-#             name  = "fast-con"
-#             image = "865577889736.dkr.ecr.ap-northeast-2.amazonaws.com/fast:4"
-#             volumeMounts = [{
-#               name      = "secrets-store-inline"
-#               mountPath = "/mnt/secrets-store"
-#               readOnly  = true
-#             }]
-#           }]
-#           volumes = [{
-#             name = "secrets-store-inline"
-#             csi = {
-#               driver = "secrets-store.csi.k8s.io"
-#               readOnly = true
-#               volumeAttributes = {
-#                 secretProviderClass = "aws-secrets"
-#               }
+
+#         volume {
+#           name = "secrets-store-inline"
+#           csi {
+#             driver = "secrets-store.csi.k8s.io"
+#             read_only = true
+#             volume_attributes = {
+#               secretProviderClass = "aws-secrets"
 #             }
-#           }]
+#           }
 #         }
+        
+         
+
+#         #   resources {
+#         #     limits = {
+#         #       cpu    = "0.5"
+#         #       memory = "512Mi"
+#         #     }
+#         #     requests = {
+#         #       cpu    = "250m"
+#         #       memory = "50Mi"
+#         #     }
+#         #   }
+
+#         #   liveness_probe {
+#         #     http_get {
+#         #       path = "/"
+#         #       port = 80
+
+#         #       http_header {
+#         #         name  = "X-Custom-Header"
+#         #         value = "Awesome"
+#         #       }
+#         #     }
+
+#         #     initial_delay_seconds = 3
+#         #     period_seconds        = 3
+#         #   }
+#         # }
 #       }
 #     }
 #   }
-  # depends_on = [ 
-  #   resource.kubernetes_ingress_v1.alb
-  #  ]
 # }
