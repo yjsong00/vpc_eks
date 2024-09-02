@@ -1,46 +1,46 @@
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: svc-fast
-# spec:
-# #  type: LoadBalancer
-#   selector:
-#     app: fast
-#   ports:
-#   - port: 80
-#     targetPort: 8000
-# ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: fast-dep
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: fast
-#   template:
-#     metadata:
-#       name: fast-pod
-#       labels:
-#         app: fast
-#     spec:
-#       serviceAccountName: secret-sa 
-#       containers:
-#       - name: fast-con
-#         image: 865577889736.dkr.ecr.ap-northeast-2.amazonaws.com/fast:4
-#         volumeMounts:
-#         - name: secrets-store-inline
-#           mountPath: "/mnt/secrets-store"  # 비밀 정보가 마운트될 경로
-#           readOnly: true
-#       volumes:
-#       - name: secrets-store-inline
-#         csi:
-#           driver: secrets-store.csi.k8s.io
-#           readOnly: true
-#           volumeAttributes:
-#             secretProviderClass: "aws-secrets"  # 참조하는 SecretProviderClass의 이름
-# ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-fast
+spec:
+#  type: LoadBalancer
+  selector:
+    app: fast
+  ports:
+  - port: 80
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fast-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fast
+  template:
+    metadata:
+      name: fast-pod
+      labels:
+        app: fast
+    spec:
+      serviceAccountName: secret-sa 
+      containers:
+      - name: fast-con
+        image: 865577889736.dkr.ecr.ap-northeast-2.amazonaws.com/fast:23
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"  # 비밀 정보가 마운트될 경로
+          readOnly: true
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "aws-secrets"  # 참조하는 SecretProviderClass의 이름
+---
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
