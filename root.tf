@@ -1,3 +1,13 @@
+terraform {
+  backend "s3" {
+    bucket         = "min-state"
+    key            = "terraform/terraform.tfstate"
+    region         = "ap-northeast-2"
+    encrypt        = true
+    # dynamodb_table = "your-lock-table" # (optional) state locking을 위해 사용
+  }
+}
+
 provider "aws" {
     region = "ap-northeast-2"
 }
