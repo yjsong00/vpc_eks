@@ -6,7 +6,7 @@ terraform {
       }
   }
   backend "s3" {
-    bucket         = "min-state"
+    bucket         = "min-tfstate"
     key            = "terraform/terraform.tfstate"
     region         = "ap-northeast-2"
     encrypt        = true
