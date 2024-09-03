@@ -10,7 +10,7 @@ terraform {
     key            = "terraform/terraform.tfstate"
     region         = "ap-northeast-2"
     encrypt        = true
-    # dynamodb_table = "your-lock-table" # (optional) state locking을 위해 사용
+    dynamodb_table = "min-tfstate-lock" # (optional) state locking을 위해 사용
   }
 }
 
@@ -25,16 +25,16 @@ resource "aws_s3_bucket_versioning" "min-tfstate-versioning" {
   }
 }
 
-# resource "aws_dynamodb_table" "terraform_state_lock" {
-#   name           = "terraform-tfstate-lock"
-#   hash_key       = "LockID"
-#   billing_mode   = "PAY_PER_REQUEST"
+resource "aws_dynamodb_table" "terraform_state_lock" {
+  name           = "min-tfstate-lock"
+  hash_key       = "LockID"
+  billing_mode   = "PAY_PER_REQUEST"
 
-#   attribute {
-#     name = "LockID"
-#     type = "S"
-#   }
-# }
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
 
 provider "aws" {
     region = "ap-northeast-2"
