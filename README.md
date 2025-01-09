@@ -13,7 +13,6 @@
 terraform plan
 terraform apply --auto-approve
 
-```
 
 ## eks configmap
 ```aws eks update-kubeconfig --name bookstore-cluster
