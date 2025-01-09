@@ -9,14 +9,15 @@
 - variables.tf -> vpc에서 output으로 출력한 거 받아오기 위한 변수 생성
 
 ## terraform 명령어
-```terraform init
+```
+terraform init
 terraform plan
 terraform apply --auto-approve
-
+```
 
 ## eks configmap
-```aws eks update-kubeconfig --name bookstore-cluster
-
+```
+aws eks update-kubeconfig --name bookstore-cluster
 ```
 
 
