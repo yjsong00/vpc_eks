@@ -17,7 +17,7 @@ module "eks" {
         min_size = 2
         max_size = 8
         desired_size = 2
-        instance_types = ["t3a.small"]
+        instance_types = ["t3.medium"]
 
     }
   }
